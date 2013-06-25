@@ -1,0 +1,24 @@
+{
+  "name": "defnode",
+  "description": "maps JavaScript Identifier AST nodes to/from their corresponding definition nodes",
+  "author": "Quinn Slack <sqs@sourcegraph.com>",
+  "version": "0.0.1",
+  "main": "defnode",
+  "readmeFilename": "README.md",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/sourcegraph/defnode.js.git"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "dependencies": {
+    "walkall": "0.0.2"
+  },
+  "devDependencies": {
+    "acorn": "0.3.1",
+    "astannotate": "0.0.1",
+    "mocha": "1.10.0",
+    "should": "~1.2.2"
+  }
+}
