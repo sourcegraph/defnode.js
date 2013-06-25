@@ -32,6 +32,46 @@ exports.findDefinitionNode = function(ast, start, end) {
   }
 };
 
+// findNameNodes finds the Identifier AST node(s) corresponding to a definition
+// node (in ast).
+//
+// This mapping is intended to correspond to the mapping between a tern defs
+// JSON file !span and the names/paths of keys pointing to that !span.
+exports.findNameNodes = function(ast, start, end) {
+  var def = walk.findNodeAt(ast, start, end, null, walkall.traversers);
+  if (!def) throw new Error('No definition node found at position ' + start + '-' + end);
+  def = def.node;
+
+  // When we search for the enclosing node, we don't want to just end up with
+  // the def node itself, so exclude it (node != def).
+  var test = function(type, node) {
+    return node != def && okNodeTypes(['AssignmentExpression', 'FunctionDeclaration', 'FunctionExpression', 'ObjectExpression', 'VariableDeclarator'])(type, node);
+  }
+  var enc = walk.findNodeAround(ast, end, test, walkall.traversers);
+  if (!enc) throw new Error('No enclosing declaration node found for definition at position ' + searchStart);
+  enc = enc.node;
+  switch (enc.type) {
+  case 'AssignmentExpression':
+    // We only want to consider Identifiers and MemberExpression properties as
+    // name nodes for this definition. Anything else is not really a receiver
+    // of this definition.
+    return collectChainedAssignmentNames(ast, enc);
+  case 'FunctionDeclaration':
+  case 'FunctionExpression':
+    if (enc == def) {
+      return def.id && [def.id];
+    } else if (enc.params.indexOf(def) != -1) {
+      // the def is a function param
+      return [def];
+    }
+    break;
+  case 'ObjectExpression':
+    return [findPropInObjectExpressionByValuePos(enc, start, end).key];
+  case 'VariableDeclarator':
+    return [enc.id];
+  }
+};
+
 // findOriginPseudonode finds the AST node or node-like object of the
 // declaration/definition that encloses the Identifier AST node with the
 // specified start/end.
@@ -40,10 +80,9 @@ exports.findDefinitionNode = function(ast, start, end) {
 // an ObjectExpression property key. These objects are not true AST nodes (thus
 // the "pseudonode" description).
 exports.findOriginPseudonode = function(ast, start, end) {
-  var ident = walk.findNodeAt(ast, start, end, 'Identifier', walkall.traversers);
-  if (!ident) throw new Error('No Identifier node found at position ' + start + '-' + end);
-  ident = ident.node;
-  if (ident.type != 'Identifier') throw new Error('Node at position ' + start + '-' + end + ' has type ' + ident.type + ', not Identifier');
+  var nameNode = walk.findNodeAt(ast, start, end, okNodeTypes(['Identifier', 'Literal']), walkall.traversers);
+  if (!nameNode) throw new Error('No name node found at position ' + start + '-' + end);
+  nameNode = nameNode.node;
 
   // find enclosing decl-like node
   var enc = walk.findNodeAround(ast, end, okNodeTypes(['AssignmentExpression', 'FunctionDeclaration', 'FunctionExpression', 'ObjectExpression', 'VariableDeclarator']), walkall.traversers);
@@ -51,22 +90,22 @@ exports.findOriginPseudonode = function(ast, start, end) {
   enc = enc.node;
   switch (enc.type) {
   case 'AssignmentExpression':
-    // We only want to consider this assignment a definition if our ident node
+    // We only want to consider this assignment a definition if our name node
     // is the LHS of the AssignmentExpression, or the property of the
     // AssignmentExpression's LHS MemberExpression. Otherwise, we're not really
     // defining something with this ident.
-    if (enc.left == ident || (enc.left.type == 'MemberExpression' && enc.left.property == ident)) {
+    if (enc.left == nameNode || (enc.left.type == 'MemberExpression' && identOrLiteralString(enc.left.property) == identOrLiteralString(nameNode))) {
       return enc;
     }
     break;
   case 'FunctionDeclaration':
   case 'FunctionExpression':
-    if (enc.id == ident) {
+    if (enc.id == nameNode) {
       // the ident is the function name
       return enc;
-    } else if (enc.params.indexOf(ident) != -1) {
+    } else if (enc.params.indexOf(nameNode) != -1) {
       // the ident is a function param
-      return ident;
+      return nameNode;
     }
     break;
   case 'ObjectExpression':
@@ -91,6 +130,15 @@ function findPropInObjectExpressionByKeyPos(objectExpr, start, end) {
   }
 }
 
+function findPropInObjectExpressionByValuePos(objectExpr, start, end) {
+  for (var i = 0; i < objectExpr.properties.length; ++i) {
+    var prop = objectExpr.properties[i];
+    if (prop.value.start == start && prop.value.end == end) {
+      return prop;
+    }
+  }
+}
+
 // rightmostExprOfAssignment follows chained AssignmentExpressions to the rightmost
 // expression. E.g., given the AssignmentExpression AST node of `a = b = c =
 // 7`, it returns the Literal value 7 on the far right.
@@ -99,4 +147,34 @@ function rightmostExprOfAssignment(assignmentExpr) {
     assignmentExpr = assignmentExpr.right;
   }
   return assignmentExpr;
+}
+
+function collectChainedAssignmentNames(ast, expr, seen) {
+  var names = [];
+  if (expr.type == 'VariableDeclarator') {
+    names.push(expr.id);
+  } else if (expr.left.type == 'Identifier') {
+    names.push(expr.left);
+  } else if (expr.left.type == 'MemberExpression' && identOrLiteralString(expr.left.property)) {
+    names.push(expr.left.property);
+  }
+
+  // Avoid infinite loop (AssignmentExpr and VariableDeclarator have same end pos).
+  if (!seen) seen = [];
+  seen.push(expr);
+
+  // Traverse to parent AssignmentExpressions to return all names in chained assignments.
+  var test = function(type, node) {
+    return seen.indexOf(node) == -1 && (type == 'AssignmentExpression' || type == 'VariableDeclarator');
+  }
+  var outer = walk.findNodeAround(ast, expr.end, test, walkall.traversers);
+  if (outer) {
+    names.push.apply(names, collectChainedAssignmentNames(ast, outer.node, seen));
+  }
+  return names;
+}
+
+function identOrLiteralString(n) {
+  if (n.type == 'Identifier') return n.name;
+  else if (n.type == 'Literal' && typeof n.value == 'string') return n.value;
 }

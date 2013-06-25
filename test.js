@@ -10,8 +10,8 @@ describe('findDefinitionNode', function() {
     it(filename, function(done) {
       var file = fs.readFile(path.join('testdata/findDefinitionNode', filename), 'utf8', function(err, text) {
         should.ifError(err);
-        var visitor = astannotate.nodeVisitor('DEF', 'Identifier', function(ident, defInfo) {
-          var def = defnode.findDefinitionNode(acorn.parse(text), ident.start, ident.end);
+        var visitor = astannotate.nodeVisitor('DEF', function(type) { return type == 'Identifier' || type == 'Literal'; }, function(name, defInfo) {
+          var def = defnode.findDefinitionNode(acorn.parse(text), name.start, name.end);
           if (defInfo == 'null') {
             should.not.exist(def);
           } else {
@@ -20,7 +20,7 @@ describe('findDefinitionNode', function() {
             should.exist(def);
             def.type.should.eql(defNodeType);
             if (defOffsets[0]) {
-              ({type: def.type, start: def.start, end: def.end}).should.eql({type: defNodeType, start: ident.start + defOffsets[0], end: ident.end + defOffsets[1]});
+              ({type: def.type, start: def.start, end: def.end}).should.eql({type: defNodeType, start: name.start + defOffsets[0], end: name.end + defOffsets[1]});
             }
           }
         });
@@ -31,3 +31,35 @@ describe('findDefinitionNode', function() {
     });
   });
 });
+
+describe('findNameNodes', function() {
+  ['assign.js', 'func.js', 'globals.js', 'object.js'].forEach(function(filename) {
+    it(filename, function(done) {
+      var file = fs.readFile(path.join('testdata/findNameNodes', filename), 'utf8', function(err, text) {
+        should.ifError(err);
+        function mkNameVisitor(directive) {
+          return astannotate.rangeVisitor(directive, null, function(range, names) {
+            should.exist(range.node);
+            var nameNodes = defnode.findNameNodes(acorn.parse(text), range.node.start, range.node.end);
+            should.exist(nameNodes);
+            if (names == 'null') {
+              nameNodes.should.eql([]);
+            } else {
+              nameNodes.map(function(i) { return identOrLiteralString(i); }).should.eql(names.split(','));
+            }
+          });
+        }
+        // Allow nesting of NAME directives (NAME1 can be nested under NAME).
+        var visitor = astannotate.multi([mkNameVisitor('NAME'), mkNameVisitor('NAME1')]);
+        var ast = acorn.parse(text)
+        visitor(text, ast);
+        done();
+      });
+    });
+  });
+});
+
+function identOrLiteralString(n) {
+  if (n.type == 'Identifier') return n.name;
+  else if (n.type == 'Literal' && typeof n.value == 'string') return n.value;
+}
