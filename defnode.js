@@ -48,7 +48,7 @@ exports.findNameNodes = function(ast, start, end) {
     return node != def && okNodeTypes(['AssignmentExpression', 'FunctionDeclaration', 'FunctionExpression', 'ObjectExpression', 'VariableDeclarator'])(type, node);
   }
   var enc = walk.findNodeAround(ast, end, test, walkall.traversers);
-  if (!enc) throw new Error('No enclosing declaration node found for definition at position ' + searchStart);
+  if (!enc) throw new Error('No enclosing declaration node found for definition at position ' + end);
   enc = enc.node;
   switch (enc.type) {
   case 'AssignmentExpression':
