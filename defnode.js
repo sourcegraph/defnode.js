@@ -14,6 +14,32 @@ var walk = require('acorn/util/walk'),
 // some symbol, and it gives you an Identifier, you can use findDefinitionNode
 // to find the definition value of the Identifier.
 exports.findDefinitionNode = function(ast, start, end) {
+  var origin = exports.findOriginPseudonode(ast, start, end);
+  if (!origin) return;
+  if (!origin.type && origin.key && origin.value && origin.kind) {
+    // ObjectExpression property
+    return origin.value;
+  }
+  switch (origin.type) {
+  case 'AssignmentExpression':
+    return rightmostExprOfAssignment(origin);
+  case 'Identifier':
+    return origin;
+  case 'VariableDeclarator':
+    return origin.init && rightmostExprOfAssignment(origin.init);
+  default:
+    return origin;
+  }
+};
+
+// findOriginPseudonode finds the AST node or node-like object of the
+// declaration/definition that encloses the Identifier AST node with the
+// specified start/end.
+//
+// This function returns ObjectExpression property objects if the Identifier is
+// an ObjectExpression property key. These objects are not true AST nodes (thus
+// the "pseudonode" description).
+exports.findOriginPseudonode = function(ast, start, end) {
   var ident = walk.findNodeAt(ast, start, end, 'Identifier', walkall.traversers);
   if (!ident) throw new Error('No Identifier node found at position ' + start + '-' + end);
   ident = ident.node;
@@ -30,7 +56,7 @@ exports.findDefinitionNode = function(ast, start, end) {
     // AssignmentExpression's LHS MemberExpression. Otherwise, we're not really
     // defining something with this ident.
     if (enc.left == ident || (enc.left.type == 'MemberExpression' && enc.left.property == ident)) {
-      return rightmostExprOfAssignment(enc);
+      return enc;
     }
     break;
   case 'FunctionDeclaration':
@@ -44,9 +70,9 @@ exports.findDefinitionNode = function(ast, start, end) {
     }
     break;
   case 'ObjectExpression':
-    return findPropInObjectExpressionByKeyPos(enc, start, end).value;
+    return findPropInObjectExpressionByKeyPos(enc, start, end);
   case 'VariableDeclarator':
-    return enc.init && rightmostExprOfAssignment(enc.init);
+    return enc;
   }
 };
 
