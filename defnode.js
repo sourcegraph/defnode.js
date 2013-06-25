@@ -67,7 +67,9 @@ exports.findNameNodes = function(ast, start, end) {
     }
     break;
   case 'ObjectExpression':
-    return [findPropInObjectExpressionByValuePos(enc, start, end).key];
+    var prop = findPropInObjectExpressionByValuePos(enc, start, end);
+    if (!prop) throw new Error('No property found for ObjectExpression value at position ' + start + '-' + end);
+    return [prop.key];
   case 'VariableDeclarator':
     return [enc.id];
   }
