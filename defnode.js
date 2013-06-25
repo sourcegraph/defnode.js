@@ -45,7 +45,8 @@ exports.findNameNodes = function(ast, start, end) {
   // When we search for the enclosing node, we don't want to just end up with
   // the def node itself, so exclude it (node != def).
   var test = function(type, node) {
-    return node != def && okNodeTypes(['AssignmentExpression', 'FunctionDeclaration', 'FunctionExpression', 'ObjectExpression', 'VariableDeclarator'])(type, node);
+    return (def.type == 'FunctionDeclaration' && type == 'FunctionDeclaration') ||
+      (node != def && ['AssignmentExpression', 'FunctionDeclaration', 'FunctionExpression', 'ObjectExpression', 'VariableDeclarator'].indexOf(type) != -1);
   }
   var enc = walk.findNodeAround(ast, end, test, walkall.traversers);
   if (!enc) throw new Error('No enclosing declaration node found for definition at position ' + end);
