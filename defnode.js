@@ -47,7 +47,7 @@ exports.findOriginPseudonode = function(ast, start, end) {
 
   // find enclosing decl-like node
   var enc = walk.findNodeAround(ast, end, okNodeTypes(['AssignmentExpression', 'FunctionDeclaration', 'FunctionExpression', 'ObjectExpression', 'VariableDeclarator']), walkall.traversers);
-  if (!enc) throw new Error('No enclosing declaration node found for Identifier at position ' + start + '-' + enc);
+  if (!enc) throw new Error('No enclosing declaration node found for Identifier at position ' + start + '-' + end);
   enc = enc.node;
   switch (enc.type) {
   case 'AssignmentExpression':
