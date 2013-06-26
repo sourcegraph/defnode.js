@@ -45,7 +45,7 @@ describe('findNameNodes', function() {
             if (names == 'null') {
               nameNodes.should.eql([]);
             } else {
-              nameNodes.map(function(i) { return identOrLiteralString(i); }).should.eql(names.split(','));
+              nameNodes.map(function(i) { return defnode.identOrLiteralString(i); }).should.eql(names.split(','));
             }
           });
         }
@@ -58,8 +58,3 @@ describe('findNameNodes', function() {
     });
   });
 });
-
-function identOrLiteralString(n) {
-  if (n.type == 'Identifier') return n.name;
-  else if (n.type == 'Literal' && typeof n.value == 'string') return n.value;
-}
