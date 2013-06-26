@@ -177,7 +177,12 @@ function collectChainedAssignmentNames(ast, expr, seen) {
   return names;
 }
 
-function identOrLiteralString(n) {
+// identOrLiteralString takes an AST node whose type is either Identifier or
+// Literal and returns the Identifier name or Literal string value. It is
+// useful when you have a name node in an ObjectExpression property or
+// MemberExpression property, which could be either an Identifier or Literal,
+// and you just want to extract the string name.
+var identOrLiteralString = exports.identOrLiteralString = function(n) {
   if (n.type == 'Identifier') return n.name;
   else if (n.type == 'Literal' && typeof n.value == 'string') return n.value;
 }
