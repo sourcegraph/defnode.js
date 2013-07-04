@@ -25,6 +25,8 @@ work with any [SpiderMonkey
 API](https://developer.mozilla.org/en-US/docs/SpiderMonkey/Parser_API)-compliant
 JavaScript AST.
 
+Documentation: [defnode.js on Sourcegraph](https://sourcegraph.com/repos/github.com/sourcegraph/defnode.js)
+
 
 Running tests
 =============
