@@ -1,6 +1,12 @@
 defnode
 =======
 
+[![xrefs](https://sourcegraph.com/api/repos/github.com/sourcegraph/defnode.js/badges/xrefs.png)](https://sourcegraph.com/github.com/sourcegraph/defnode.js)
+[![funcs](https://sourcegraph.com/api/repos/github.com/sourcegraph/defnode.js/badges/funcs.png)](https://sourcegraph.com/github.com/sourcegraph/defnode.js)
+[![top func](https://sourcegraph.com/api/repos/github.com/sourcegraph/defnode.js/badges/top-func.png)](https://sourcegraph.com/github.com/sourcegraph/defnode.js)
+[![library users](https://sourcegraph.com/api/repos/github.com/sourcegraph/defnode.js/badges/library-users.png)](https://sourcegraph.com/github.com/sourcegraph/defnode.js)
+[![status](https://sourcegraph.com/api/repos/github.com/sourcegraph/defnode.js/badges/status.png)](https://sourcegraph.com/github.com/sourcegraph/defnode.js)
+
 defnode is a node.js package that maps JavaScript Identifier AST nodes to/from
 their corresponding definition nodes. It is useful in tools that perform
 JavaScript source introspection.
