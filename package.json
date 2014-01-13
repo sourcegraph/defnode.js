@@ -13,10 +13,10 @@
     "test": "mocha"
   },
   "dependencies": {
+    "acorn": "~0.4.2",
     "walkall": "~0.0.3"
   },
   "devDependencies": {
-    "acorn": "~0.4.2",
     "astannotate": "~0.0.4",
     "mocha": "1.10.0",
     "should": "~1.2.2"
