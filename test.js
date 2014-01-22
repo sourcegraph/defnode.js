@@ -33,7 +33,7 @@ describe('findDefinitionNode', function() {
 });
 
 describe('findNameNodes', function() {
-  ['assign.js', 'func.js', 'globals.js', 'object.js'].forEach(function(filename) {
+  ['assign.js', 'func.js', 'func_assign.js', 'globals.js', 'object.js'].forEach(function(filename) {
     it(filename, function(done) {
       var file = fs.readFile(path.join('testdata/findNameNodes', filename), 'utf8', function(err, text) {
         should.ifError(err);

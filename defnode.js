@@ -168,7 +168,7 @@ function collectChainedAssignmentNames(ast, expr, seen) {
 
   // Traverse to parent AssignmentExpressions to return all names in chained assignments.
   var test = function(type, node) {
-    return seen.indexOf(node) == -1 && (type == 'AssignmentExpression' || type == 'VariableDeclarator');
+    return seen.indexOf(node) == -1 && ((type == 'AssignmentExpression' && node.right == expr) || (type == 'VariableDeclarator' && node.init == expr));
   }
   var outer = walk.findNodeAround(ast, expr.end, test, walkall.traversers);
   if (outer) {
